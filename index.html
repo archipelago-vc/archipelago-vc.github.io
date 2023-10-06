@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Archipelago VC">
+    <meta name="author" content="Archipelago VC">
+    <title>Archipelago VC</title>
+    <link href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+html, body {
+  height: 100%;
+}
+
+body {
+  display: -ms-flexbox;
+  display: -webkit-box;
+  display: flex;
+  -ms-flex-align: center;
+  -ms-flex-pack: center;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  background-color: #FFFFFF;
+}
+
+h1 {
+  padding: 20%;
+}
+
+canvas {
+  width: 120px;
+  height: 120px;
+  background: #FFFFFF;
+  border: 1px solid #FFFFFF;
+  padding: 0px;
+  margin: auto;
+  image-rendering: pixelated;
+}
+    </style>
+    <script>
+const favIcon = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9TtVIqDlYQcchQneyiIo6likWwUNoKrTqYXPoFTRqSFBdHwbXg4Mdi1cHFWVcHV0EQ/ABxdXFSdJES/5cUWsR4cNyPd/ced+8AoVllqtkTA1TNMtKJuJjLr4qBVwTRBwFRDEvM1JOZxSw8x9c9fHy9i/Is73N/jgGlYDLAJxLHmG5YxBvEs5uWznmfOMzKkkJ8Tjxp0AWJH7kuu/zGueSwwDPDRjY9TxwmFktdLHcxKxsq8QxxRFE1yhdyLiuctzir1Tpr35O/MFTQVjJcpzmGBJaQRAoiZNRRQRUW9VWBRoqJNO3HPfyjjj9FLplcFTByLKAGFZLjB/+D392axekpNykUB3pfbPtjHAjsAq2GbX8f23brBPA/A1dax19rAnOfpDc6WuQIGNwGLq47mrwHXO4AI0+6ZEiO5KcpFIvA+xl9Ux4YugWCa25v7X2cPgBZ6mr5Bjg4BCZKlL3u8e7+7t7+PdPu7weND3Kxl6NcxgAAAAZiS0dEAPwAtgAAtVSEgQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cKBgUkHEtsueUAAABKSURBVFjDYww5+uw/AwVgteoSSrQzMDEMMBh1wKgDRh0w6oBRB4w6YNQBjIr/71HUHjh/yn80CkYdMOqAUQeMOmDUAaMOGNoOAABIvgmWP2uuKwAAAABJRU5ErkJggg==";
+const docHead = document.getElementsByTagName('head')[0];
+const newLink = document.createElement('link');
+newLink.rel = 'shortcut icon';
+newLink.type = 'image/x-icon';
+newLink.href = 'data:image/png;base64,'+favIcon;
+docHead.appendChild(newLink);
+
+class Color extends Array {
+  constructor (parameter) {
+    super();
+
+    if (typeof parameter === 'string' || parameter instanceof String) {
+      parameter = Color.fromHex(parameter);
+    }
+
+    for (let i = 0; i < parameter.length; i++) {
+      this.push(parameter[i]);
+    }
+  }
+
+  static hexCharCodeToIntAt (s, i) {
+    const c = s.charCodeAt(i);
+    return (c >= 48 && c < 58) ? c - 48 : c - 87;
+  }
+
+  static fromHex (h) {
+    h = h.toLowerCase();
+    return [
+      (Color.hexCharCodeToIntAt(h, 1) * 16) + Color.hexCharCodeToIntAt(h, 2),
+      (Color.hexCharCodeToIntAt(h, 3) * 16) + Color.hexCharCodeToIntAt(h, 4),
+      (Color.hexCharCodeToIntAt(h, 5) * 16) + Color.hexCharCodeToIntAt(h, 6)
+    ];
+  }
+
+  near (d, rs) {
+    return new Color([
+      Math.min(255, Math.max(0, Math.floor(this[0] - d + (2 * d * Math.random())))),
+      Math.min(255, Math.max(0, Math.floor(this[1] - d + (2 * d * Math.random())))),
+      Math.min(255, Math.max(0, Math.floor(this[2] - d + (2 * d * Math.random()))))
+    ]);
+  }
+
+  rgb () {
+    return 'rgb(' + [
+      this[0],
+      this[1],
+      this[2]
+    ].join(",") + ')';
+  };
+}
+
+window.onload = function () {
+  const canvas_size = 160;
+  const cell_size = 20;
+  const color_sand = new Color("#FFEA8A");
+  const color_bank = new Color("#F0C92D");
+  const color_aqua = new Color("#21FFDE");
+  const color_wave = new Color("#54EBE6");
+  const color_deep = new Color("#1FBFA7");
+  
+  const canvas = document.getElementById('canvas');
+  canvas.width = canvas_size;
+  canvas.height = canvas_size;
+  const context = canvas.getContext('2d');
+  context.lineWidth = 0;
+
+  function layer(cells, cell_size, colors, probability, delta, offset) {
+    for (let x = cells.length - 1; x >= 0; x--) {
+      for (let y = cells[x].length - 1; y >= 0; y--) {
+        if (cells[x][y].active) {
+          context.fillStyle = ((Math.random() < 0.5) ? colors[0] : colors[1]).near(delta).rgb();
+          context.fillRect(
+            cells[x][y].x - offset,
+            cells[x][y].y - offset,
+            cell_size,
+            cell_size
+          );
+        }
+      }
+    }
+  }
+
+  function grid(colors, probability) {
+    const grid_size = Math.floor(canvas_size / cell_size);
+    let cells = [];
+    for (let x = 0; x < grid_size; x++) {
+      cells.push([]);
+      for (let y = 0; y < grid_size; y++) {
+        cells[x].push({
+          "x": x * cell_size,
+          "y": y * cell_size,
+          "active": (
+            (Math.random() < probability)
+            &&
+            (
+              3.4 > Math.sqrt(
+                Math.pow(x - (grid_size / 2), 2)
+                +
+                Math.pow(y - (grid_size / 2), 2)
+              )
+            )
+          )
+        });
+      }
+    }
+
+    layer(cells, cell_size, [colors[0], colors[0]], probability, 4, 0);
+    layer(cells, cell_size, [colors[1], colors[2]], probability, 6, 5);
+  }
+
+  function draw() {
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas_size, canvas_size);
+    grid([color_deep, color_aqua, color_wave], 0.4);
+    grid([color_bank, color_sand, color_sand], 0.25);
+  }
+  
+  canvas.addEventListener("mouseenter", function(e) { draw(); });
+  draw();
+};
+    </script>
+  </head>
+  <body class="text-center">
+    <h1 class="h3 mb-3 font-weight-normal">
+      <a href="mailto:contact@archipelago.vc">
+        <canvas id="canvas"></canvas>
+      </a>
+    </h2>
+  </body>
+</html>
